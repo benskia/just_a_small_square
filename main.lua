@@ -11,6 +11,7 @@ local result = nil
 local buttons = {}
 local menu_is_open = false
 
+
 function love.load()
     wf = require "libraries/windfield"
     sti = require "libraries/sti"
@@ -46,7 +47,7 @@ function love.load()
         table.insert(high_scores, i, nil)
     end
 
-    -- Construct a table of buttons with which to render the menu
+    -- Create menu buttons
     local function newButton(text, fn)
         return {
             text = text,
@@ -98,60 +99,61 @@ function love.load()
     controls.menu = "tab"
 
     gravity = 30
-    terminal_velocity = 360
-    local platforms = {}
-    exit = {}
+    terminal_velocity = 500
 
     player = {}
     player.rgb = {0.5, 0.1, 0.3}
-    player.speed = 170
+    player.speed = 210
     player.float_coefficient = 0.3
-    player.drag_coefficient = 0.6
-    player.jump_strength = 400
+    player.drag_coefficient = 0.8
+    player.jump_strength = 500
     player.vx = 0
     player.vy = 0
-    player.is = false
     player.is_colliding_top = false
     player.is_colliding_bot = false
     player.is_colliding_left = false
     player.is_colliding_right = false
-    player.can_air_jump = false
+
+    local colliders = {}
+    local tiled_static_layers = {"platforms", "death_blocks", "exit"}
 
     function reset()
+        game_map = sti(maps[current_map_index])
+
         if world then
             world:destroy()
         end
         world = wf.newWorld(0, 0, false)
-        world:addCollisionClass("platform")
-        world:addCollisionClass("exit")
-        world:addCollisionClass("player")
 
-        game_map = sti(maps[current_map_index])
-
-        if game_map.layers["platforms"] then
-            for i, obj in pairs(game_map.layers["platforms"].objects) do
-                local platform = world:newRectangleCollider(obj.x, obj.y, obj.width, obj.height)
-                platform:setCollisionClass("platform")
-                platform:setType("static")
-                table.insert(platforms, platform)
+        -- Static windfield colliders are implemented with Tiled object layers
+        -- For each layer that exists in the current level, create all colliders
+        -- for that layer
+        local function construct_static_colliders(layer_name)
+            if game_map.layers[layer_name] then
+                world:addCollisionClass(layer_name)
+                for i, obj in pairs(game_map.layers[layer_name].objects) do
+                    local collider = world:newRectangleCollider(obj.x, obj.y, obj.width, obj.height)
+                    collider:setCollisionClass(layer_name)
+                    collider:setType("static")
+                    table.insert(colliders, collider)
+                end
             end
         end
-        if game_map.layers["exit"] then
-            for i, obj in pairs(game_map.layers["exit"].objects) do
-                exit.x, exit.y, exit.w, exit.h = obj.x, obj.y, obj.width, obj.height
-                exit.collider = world:newRectangleCollider(obj.x, obj.y, obj.width, obj.height)
-                exit.collider:setCollisionClass("exit")
-                exit.collider:setType("static")
-            end
+
+        for i, layer in ipairs(tiled_static_layers) do
+            construct_static_colliders(layer)
         end
+
+        -- Create the player's collider object, and save position and dimensions
+        -- to draw the player during gameplay
         if game_map.layers["player"] then
+            world:addCollisionClass("player")
             for i, obj in pairs(game_map.layers["player"].objects) do
                 player.x, player.y, player.w, player.h = obj.x, obj.y, obj.width, obj.height
                 player.collider = world:newRectangleCollider(obj.x, obj.y, obj.width, obj.height)
                 player.collider:setCollisionClass("player")
                 player.collider:setFixedRotation(true)
                 player.collider:setFriction(0)
-                player.mass = player.collider:getMass()
             end
         end
 
@@ -170,20 +172,12 @@ function love.load()
         -- to jump or move along the x-axis. To set these flags, we check the normal
         -- vector for collisions that take place between the player and platforms.
         local function collision_side(collider_1, collider_2, Contact)
-            if collider_1.collision_class == "player" and collider_2.collision_class == "platform" then
+            if collider_1.collision_class == "player" and collider_2.collision_class == "platforms" then
                 local nx, ny = Contact:getNormal()
-                if ny > 0 then
-                    player.is_colliding_top = true
-                end
-                if ny < 0 then
-                    player.is_colliding_bot = true
-                end
-                if nx > 0 then
-                    player.is_colliding_left = true
-                end
-                if nx < 0 then
-                    player.is_colliding_right = true
-                end
+                if ny > 0 then player.is_colliding_top = true end
+                if ny < 0 then player.is_colliding_bot = true end
+                if nx > 0 then player.is_colliding_left = true end
+                if nx < 0 then player.is_colliding_right = true end
             end
         end
 
@@ -195,24 +189,6 @@ end
 
 
 function love.update(dt)
-    local function is_colliding(ax, ay, aw, ah, bx, by, bw, bh)
-        return (ax <= bx + bw and ax + aw >= bx and ay <= by + bh and ay + ah >= by)
-    end
-
-    local function get_velocity_y(vy, float_coeff, drag_coeff, gravity, t_velocity)
-        -- Holding jump increases the maximum height of the jump and decreases
-        -- the speed the player descends
-        if love.keyboard.isDown(controls.jump) then
-            gravity = gravity * float_coeff
-            t_velocity = t_velocity * drag_coeff
-        end
-
-        vy = vy + gravity
-
-        if vy > t_velocity then vy = t_velocity end
-
-        return vy
-    end
 
     if not menu_is_open then
         player.x = player.collider:getX() - player.w / 2
@@ -221,21 +197,31 @@ function love.update(dt)
         player.is_colliding_bot = false
         player.is_colliding_left = false
         player.is_colliding_right = false
-        player.can_air_jump = false
 
         player.collider:setLinearVelocity(player.vx, player.vy)
         world:update(dt)
         player.vx, player.vy = player.collider:getLinearVelocity()
 
-        -- 
+        local function calc_velocity_y(vy, float_coeff, drag_coeff, gravity, t_velocity)
+            -- Holding jump decreases the effect of gravity and the player's
+            -- terminal velocity
+            if love.keyboard.isDown(controls.jump) then
+                gravity = gravity * float_coeff
+                t_velocity = t_velocity * drag_coeff
+            end
+    
+            vy = vy + gravity
+            if vy > t_velocity then vy = t_velocity end
+            return vy
+        end
+
         if not player.is_colliding_bot then
-            player.vy = get_velocity_y(
+            player.vy = calc_velocity_y(
                 player.vy, player.float_coefficient, player.drag_coefficient,
                 gravity, terminal_velocity
             )
         end
 
-        -- Enable x-axis movement when the player is not obstructed
         if love.keyboard.isDown(controls.left) and not player.is_colliding_left then
             player.vx = player.speed * -1
         elseif love.keyboard.isDown(controls.right) and not player.is_colliding_right then
@@ -245,8 +231,10 @@ function love.update(dt)
         end
     end
 
-    -- Touching the exit records the time-elapsed, if it is better than the
-    -- current best time, and resets the level
+    if player.collider:enter("death_blocks") then
+        reset()
+    end
+
     if player.collider:enter("exit") then
         if not result or time < result then
             result = time
@@ -257,7 +245,6 @@ end
 
 
 function love.keypressed(key)
-    -- The player can jump if they are grounded
     if key == controls.jump and player.is_colliding_bot then
         player.vy = player.jump_strength * -1
     end

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="16" height="16" tilewidth="32" tileheight="32" infinite="0" nextlayerid="7" nextobjectid="35">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="16" height="16" tilewidth="32" tileheight="32" infinite="0" nextlayerid="7" nextobjectid="18">
  <editorsettings>
-  <export target="../map_6.lua" format="lua"/>
+  <export target="../map_7.lua" format="lua"/>
  </editorsettings>
  <tileset firstgid="1" name="dark-bluegrey" tilewidth="32" tileheight="32" tilecount="36" columns="6">
   <image source="../../sprites/dark-bluegrey.png" width="192" height="192"/>
@@ -38,50 +38,40 @@
  <layer id="2" name="foreground" width="16" height="16">
   <data encoding="csv">
 37,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,
-55,0,0,0,0,0,55,0,0,0,0,0,0,0,0,55,
-55,0,0,0,0,0,55,0,0,0,0,0,0,0,0,55,
-55,0,37,0,37,0,55,0,0,0,0,0,0,0,0,55,
-55,0,0,0,55,0,55,40,0,0,0,0,37,0,0,55,
-55,0,0,0,55,0,55,0,0,0,0,0,55,0,0,55,
-55,0,37,0,55,0,55,0,0,0,0,0,55,0,0,55,
-55,0,0,0,55,0,55,40,0,0,0,0,55,0,0,55,
-55,0,0,0,55,0,0,0,0,0,0,0,55,0,0,55,
-55,0,37,0,55,0,0,0,0,0,0,37,58,0,0,55,
-55,0,0,0,55,0,0,0,0,0,0,0,55,0,0,55,
-55,0,0,0,55,0,0,0,0,0,0,0,55,0,0,55,
-55,0,37,0,55,0,0,0,0,0,0,37,58,0,0,55,
-55,0,0,0,55,0,0,0,0,0,0,0,55,77,78,55,
-55,0,0,0,55,0,0,0,0,0,0,0,55,80,81,55,
-55,40,40,40,58,82,82,82,40,82,82,55,58,40,40,58
+55,0,0,0,0,0,0,0,0,0,0,0,0,0,0,55,
+55,0,0,0,0,0,0,0,0,0,0,0,0,0,0,55,
+55,0,0,0,0,0,0,0,0,0,0,0,0,0,0,55,
+55,0,0,0,0,0,0,0,0,0,0,0,0,0,0,55,
+55,0,0,0,0,0,0,0,0,0,0,0,0,0,0,55,
+55,0,0,0,0,0,0,0,0,0,0,0,0,0,0,55,
+55,0,0,0,0,0,0,0,0,0,0,0,0,0,0,55,
+55,0,0,0,0,0,0,0,0,0,0,0,0,0,0,55,
+55,0,0,0,0,0,0,0,0,0,0,0,0,0,0,55,
+55,82,82,82,82,82,82,82,82,82,82,82,82,82,82,55,
+58,0,0,0,0,0,0,0,0,0,0,0,0,0,0,58,
+55,0,0,0,0,0,0,0,0,0,0,0,0,77,78,55,
+55,0,0,0,0,0,0,0,0,0,0,0,0,80,81,55,
+55,40,40,40,0,0,0,37,40,0,0,0,37,40,40,58,
+55,58,58,58,82,82,82,55,58,82,82,82,55,58,58,58
 </data>
  </layer>
  <objectgroup id="3" name="exit">
-  <object id="1" x="432" y="432" width="32" height="32"/>
+  <object id="1" x="432" y="400" width="32" height="32"/>
  </objectgroup>
  <objectgroup id="4" name="player">
-  <object id="2" x="40" y="464" width="16" height="16"/>
+  <object id="2" x="40" y="432" width="16" height="16"/>
  </objectgroup>
  <objectgroup id="5" name="platforms">
   <object id="3" x="0" y="0" width="512" height="32"/>
-  <object id="4" x="352" y="480" width="160" height="32"/>
-  <object id="5" x="480" y="32" width="32" height="448"/>
-  <object id="6" x="0" y="32" width="32" height="448"/>
-  <object id="12" x="384" y="128" width="32" height="352"/>
-  <object id="17" x="64" y="384" width="32" height="32"/>
-  <object id="19" x="0" y="480" width="160" height="32"/>
-  <object id="22" x="256" y="480" width="32" height="32"/>
-  <object id="23" x="352" y="384" width="32" height="32"/>
-  <object id="25" x="352" y="288" width="32" height="32"/>
-  <object id="26" x="192" y="32" width="32" height="224"/>
-  <object id="28" x="128" y="96" width="32" height="384"/>
-  <object id="29" x="64" y="288" width="32" height="32"/>
-  <object id="30" x="224" y="128" width="32" height="32"/>
-  <object id="32" x="224" y="224" width="32" height="32"/>
-  <object id="33" x="64" y="96" width="32" height="32"/>
-  <object id="34" x="64" y="192" width="32" height="32"/>
+  <object id="4" x="384" y="448" width="128" height="64"/>
+  <object id="5" x="480" y="32" width="32" height="416"/>
+  <object id="6" x="0" y="32" width="32" height="416"/>
+  <object id="13" x="224" y="448" width="64" height="64"/>
+  <object id="14" x="0" y="448" width="128" height="64"/>
  </objectgroup>
  <objectgroup id="6" name="death_blocks">
-  <object id="20" x="160" y="480" width="96" height="32"/>
-  <object id="21" x="288" y="480" width="64" height="32"/>
+  <object id="15" x="32" y="320" width="448" height="32"/>
+  <object id="16" x="288" y="480" width="96" height="32"/>
+  <object id="17" x="128" y="480" width="96" height="32"/>
  </objectgroup>
 </map>
