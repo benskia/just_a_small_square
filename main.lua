@@ -97,29 +97,31 @@ function love.load()
     controls.jump = "w"
     controls.menu = "tab"
 
-    gravity = 3500
+    gravity = 30
+    terminal_velocity = 360
     local platforms = {}
-    boost_rgb = {1, 1, 1}
     exit = {}
-    exit_rgb = {0, 1, 1}
 
     player = {}
     player.rgb = {0.5, 0.1, 0.3}
-    player.speed = 200
-    player.float_coeff = 3
-    player.jump_strength = 250
+    player.speed = 170
+    player.float_coefficient = 0.3
+    player.drag_coefficient = 0.6
+    player.jump_strength = 400
     player.vx = 0
     player.vy = 0
-    player.is_on_platform_top = false
-    player.is_on_platform_left = false
-    player.is_on_platform_right = false
+    player.is = false
+    player.is_colliding_top = false
+    player.is_colliding_bot = false
+    player.is_colliding_left = false
+    player.is_colliding_right = false
     player.can_air_jump = false
 
     function reset()
         if world then
             world:destroy()
         end
-        world = wf.newWorld(0, gravity, false)
+        world = wf.newWorld(0, 0, false)
         world:addCollisionClass("platform")
         world:addCollisionClass("exit")
         world:addCollisionClass("player")
@@ -132,14 +134,6 @@ function love.load()
                 platform:setCollisionClass("platform")
                 platform:setType("static")
                 table.insert(platforms, platform)
-            end
-        end
-        if game_map.layers["boosts"] then
-            boosts = {}
-            for i, obj in pairs(game_map.layers["boosts"].objects) do
-                local boost = {}
-                boost.x, boost.y, boost.w, boost.h = obj.x, obj.y, obj.width, obj.height
-                table.insert(boosts, boost)
             end
         end
         if game_map.layers["exit"] then
@@ -156,6 +150,7 @@ function love.load()
                 player.collider = world:newRectangleCollider(obj.x, obj.y, obj.width, obj.height)
                 player.collider:setCollisionClass("player")
                 player.collider:setFixedRotation(true)
+                player.collider:setFriction(0)
                 player.mass = player.collider:getMass()
             end
         end
@@ -177,6 +172,9 @@ function love.load()
         local function collision_side(collider_1, collider_2, Contact)
             if collider_1.collision_class == "player" and collider_2.collision_class == "platform" then
                 local nx, ny = Contact:getNormal()
+                if ny > 0 then
+                    player.is_colliding_top = true
+                end
                 if ny < 0 then
                     player.is_colliding_bot = true
                 end
@@ -201,46 +199,49 @@ function love.update(dt)
         return (ax <= bx + bw and ax + aw >= bx and ay <= by + bh and ay + ah >= by)
     end
 
+    local function get_velocity_y(vy, float_coeff, drag_coeff, gravity, t_velocity)
+        -- Holding jump increases the maximum height of the jump and decreases
+        -- the speed the player descends
+        if love.keyboard.isDown(controls.jump) then
+            gravity = gravity * float_coeff
+            t_velocity = t_velocity * drag_coeff
+        end
+
+        vy = vy + gravity
+
+        if vy > t_velocity then vy = t_velocity end
+
+        return vy
+    end
+
     if not menu_is_open then
         player.x = player.collider:getX() - player.w / 2
         player.y = player.collider:getY() - player.h / 2
+        player.is_colliding_top = false
         player.is_colliding_bot = false
         player.is_colliding_left = false
         player.is_colliding_right = false
         player.can_air_jump = false
 
-        -- If the player is overlapping a boost zone, they will be able to jump,
-        -- despite being airborne
-        if boosts then
-            for i = 1, #boosts, 1 do
-                if is_colliding(
-                    player.x, player.y, player.w, player.h,
-                    boosts[i].x, boosts[i].y, boosts[i].w, boosts[i].h
-                ) then
-                    player.can_air_jump = true
-                end
-            end
-        end
-
+        player.collider:setLinearVelocity(player.vx, player.vy)
         world:update(dt)
-
-        -- Holding jump increases the maximum height of the jump and decreases
-        -- the speed the player descends
-        if love.keyboard.isDown(controls.jump) then
-            world:setGravity(0, gravity / player.float_coeff)
-        end
-        if not love.keyboard.isDown(controls.jump) then
-            world:setGravity(0, gravity)
-        end
-
         player.vx, player.vy = player.collider:getLinearVelocity()
+
+        -- 
+        if not player.is_colliding_bot then
+            player.vy = get_velocity_y(
+                player.vy, player.float_coefficient, player.drag_coefficient,
+                gravity, terminal_velocity
+            )
+        end
 
         -- Enable x-axis movement when the player is not obstructed
         if love.keyboard.isDown(controls.left) and not player.is_colliding_left then
-            player.collider:setLinearVelocity(player.speed * -1, player.vy)
-        end
-        if love.keyboard.isDown(controls.right) and not player.is_colliding_right then
-            player.collider:setLinearVelocity(player.speed, player.vy)
+            player.vx = player.speed * -1
+        elseif love.keyboard.isDown(controls.right) and not player.is_colliding_right then
+            player.vx = player.speed
+        else
+            player.vx = 0
         end
     end
 
@@ -256,24 +257,13 @@ end
 
 
 function love.keypressed(key)
-    -- The player can jump if they are either grounded or boosted
-    if (key == controls.jump and player.is_colliding_bot) or player.can_air_jump then
-        player.collider:setLinearVelocity(player.vx, 0)
-        player.collider:applyLinearImpulse(0, player.jump_strength * -1)
+    -- The player can jump if they are grounded
+    if key == controls.jump and player.is_colliding_bot then
+        player.vy = player.jump_strength * -1
     end
 
     if key == controls.menu then
         menu_is_open = not menu_is_open
-    end
-end
-
-
-function love.keyreleased(key)
-    -- If the left or right controls aren't being held, ensure the player no
-    -- longer moves along the x-axis
-    if key == controls.left or key == controls.right then
-        player.vx, player.vy = player.collider:getLinearVelocity()
-        player.collider:setLinearVelocity(0, player.vy)
     end
 end
 

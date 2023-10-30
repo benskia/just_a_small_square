@@ -1,3 +1,4 @@
+maps/test_map.lua
 maps/map_1.lua
 maps/map_2.lua
 maps/map_3.lua
