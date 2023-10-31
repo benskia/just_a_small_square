@@ -16,7 +16,8 @@ function love.load()
     wf = require "libraries/windfield"
     sti = require "libraries/sti"
     maps = require("maps/maps")
-    
+
+    -- Map index, STI map, and high score initialization
     current_map_index = 1
     game_map = sti(maps[current_map_index])
     local high_scores = {}
@@ -24,7 +25,7 @@ function love.load()
         table.insert(high_scores, i, nil)
     end
 
-    -- Create menu buttons
+    -- Menu and menu-button creation
     local function newButton(text, fn)
         return {
             text = text,
