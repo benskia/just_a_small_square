@@ -16,6 +16,7 @@ function love.load()
     wf = require "libraries/windfield"
     sti = require "libraries/sti"
     maps = require("maps/maps")
+    controls, alt_controls, player, gravity, terminal_velocity = unpack(require("config"))
 
     -- Map index, STI map, and high score initialization
     current_map_index = 1
@@ -69,33 +70,6 @@ function love.load()
             love.event.quit(0)
         end
     ))
-
-    controls = {}
-    controls.left = "a"
-    controls.right = "d"
-    controls.jump = "w"
-    controls.menu = "tab"
-
-    alt_controls = {}
-    alt_controls.left = "left"
-    alt_controls.right = "right"
-    alt_controls.jump = "up"
-
-    gravity = 30
-    terminal_velocity = 500
-
-    player = {}
-    player.rgb = {0.5, 0.1, 0.3}
-    player.speed = 210
-    player.float_coefficient = 0.3
-    player.drag_coefficient = 0.8
-    player.jump_strength = 500
-    player.vx = 0
-    player.vy = 0
-    player.is_colliding_top = false
-    player.is_colliding_bot = false
-    player.is_colliding_left = false
-    player.is_colliding_right = false
 
     local colliders = {}
     local tiled_static_layers = {"platforms", "death_blocks", "exit"}
