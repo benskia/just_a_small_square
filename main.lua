@@ -161,8 +161,8 @@ function love.update(dt)
         player.vx, player.vy = player.collider:getLinearVelocity()
 
         local function calc_velocity_y(vy, float_coeff, drag_coeff, gravity, t_velocity)
-            -- Holding jump decreases the effect of gravity and the player's
-            -- terminal velocity
+            -- Holding jump decreases the downward acceleration and maximum,
+            -- downward speed of the player
             if love.keyboard.isDown(controls.jump) or love.keyboard.isDown(alt_controls.jump) then
                 gravity = gravity * float_coeff
                 t_velocity = t_velocity * drag_coeff
