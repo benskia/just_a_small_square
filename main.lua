@@ -15,31 +15,8 @@ local menu_is_open = false
 function love.load()
     wf = require "libraries/windfield"
     sti = require "libraries/sti"
-
-    -- check if a file exists
-    local function file_exists(filename)
-        local f = io.open(filename, "rb")
-        if f then f:close() end
-        return f ~= nil
-    end
-
-    -- read in lines from a file
-    local function read_lines(filename)
-        if not file_exists(filename) then
-            print("Maps list file not found")
-            love.event.quit(0)
-        end
-        local lines = {}
-        for line in io.lines(filename) do
-            lines[#lines + 1] = line
-        end
-        return lines
-    end
-
-    -- Read in a list of maps to construct a map table, initialize a map index,
-    -- and set the map to be rendered. For each map, initialize a high score.
-    local map_file = "maps/maps.txt"
-    local maps = read_lines(map_file)
+    maps = require("maps/maps")
+    
     current_map_index = 1
     game_map = sti(maps[current_map_index])
     local high_scores = {}
@@ -177,7 +154,8 @@ function love.load()
         -- to jump or move along the x-axis. To set these flags, we check the normal
         -- vector for collisions that take place between the player and platforms.
         local function collision_side(collider_1, collider_2, Contact)
-            if collider_1.collision_class == "player" and collider_2.collision_class == "platforms" then
+            if collider_1.collision_class == "player"
+            and collider_2.collision_class == "platforms" then
                 local nx, ny = Contact:getNormal()
                 if ny > 0 then player.is_colliding_top = true end
                 if ny < 0 then player.is_colliding_bot = true end
