@@ -98,6 +98,11 @@ function love.load()
     controls.jump = "w"
     controls.menu = "tab"
 
+    alt_controls = {}
+    alt_controls.left = "left"
+    alt_controls.right = "right"
+    alt_controls.jump = "up"
+
     gravity = 30
     terminal_velocity = 500
 
@@ -205,7 +210,7 @@ function love.update(dt)
         local function calc_velocity_y(vy, float_coeff, drag_coeff, gravity, t_velocity)
             -- Holding jump decreases the effect of gravity and the player's
             -- terminal velocity
-            if love.keyboard.isDown(controls.jump) then
+            if love.keyboard.isDown(controls.jump) or love.keyboard.isDown(alt_controls.jump) then
                 gravity = gravity * float_coeff
                 t_velocity = t_velocity * drag_coeff
             end
@@ -222,9 +227,11 @@ function love.update(dt)
             )
         end
 
-        if love.keyboard.isDown(controls.left) and not player.is_colliding_left then
+        if (love.keyboard.isDown(controls.left) or love.keyboard.isDown(alt_controls.left))
+        and not player.is_colliding_left then
             player.vx = player.speed * -1
-        elseif love.keyboard.isDown(controls.right) and not player.is_colliding_right then
+        elseif (love.keyboard.isDown(controls.right) or love.keyboard.isDown(alt_controls.right))
+        and not player.is_colliding_right then
             player.vx = player.speed
         else
             player.vx = 0
@@ -245,7 +252,8 @@ end
 
 
 function love.keypressed(key)
-    if key == controls.jump and player.is_colliding_bot then
+    if (key == controls.jump or key == alt_controls.jump)
+    and player.is_colliding_bot then
         player.vy = player.jump_strength * -1
     end
 
