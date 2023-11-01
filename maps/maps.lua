@@ -5,5 +5,7 @@ return {
     "maps/map_4.lua",
     "maps/map_5.lua",
     "maps/map_6.lua",
-    "maps/map_7.lua"
+    "maps/map_7.lua",
+    "maps/map_8.lua",
+    "maps/map_9.lua"
 }
