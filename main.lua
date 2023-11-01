@@ -16,7 +16,7 @@ function love.load()
     wf = require "libraries/windfield"
     sti = require "libraries/sti"
     maps = require("maps/maps")
-    controls, alt_controls, player, gravity, terminal_velocity = unpack(require("config"))
+    controls, alt_controls, player, gravity, terminal_velocity = unpack(require("settings"))
 
     -- Map index, STI map, and high score initialization
     current_map_index = 1
@@ -36,6 +36,7 @@ function love.load()
             last = false
         }
     end
+
     table.insert(buttons, newButton(
         "Reset Level",
         function()
@@ -139,6 +140,7 @@ function love.load()
             end
         end
 
+        -- Before a collision is resolved, determine its normal vector
         player.collider:setPreSolve(collision_side)
     end
 
@@ -156,13 +158,12 @@ function love.update(dt)
         player.is_colliding_right = false
 
         player.collider:setLinearVelocity(player.vx, player.vy)
-        player.vx, player.vy = player.collider:getLinearVelocity()
-
         world:update(dt)
 
         local function calc_velocity_y(vy, float_coeff, drag_coeff, gravity, t_velocity, is_bonking)
+            -- Scrub upward momentum when the player collides upward into a platform
             if is_bonking then vy = 0 end
-            
+
             -- Holding jump decreases the downward acceleration and maximum,
             -- downward speed of the player
             if love.keyboard.isDown(controls.jump) or love.keyboard.isDown(alt_controls.jump) then
@@ -187,6 +188,7 @@ function love.update(dt)
         if (love.keyboard.isDown(controls.left) or love.keyboard.isDown(alt_controls.left))
         and not player.is_colliding_left then
             player.vx = player.speed * -1
+            
         elseif (love.keyboard.isDown(controls.right) or love.keyboard.isDown(alt_controls.right))
         and not player.is_colliding_right then
             player.vx = player.speed
