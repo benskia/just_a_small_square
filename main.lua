@@ -1,3 +1,4 @@
+-- Scale the 512x512 game resolution to a more visible 1028x1028
 local push = require "libraries/push"
 local game_width, game_height = 512, 512
 local window_width, window_height = 1028, 1028
@@ -8,7 +9,7 @@ local start = love.timer.getTime()
 local time = 0
 local result = nil
 
-local buttons = {}
+local menu_buttons = {}
 local menu_is_open = false
 
 
@@ -37,13 +38,13 @@ function love.load()
         }
     end
 
-    table.insert(buttons, newButton(
+    table.insert(menu_buttons, newButton(
         "Reset Level",
         function()
             reset()
         end
     ))
-    table.insert(buttons, newButton(
+    table.insert(menu_buttons, newButton(
         "Next Level",
         function()
             if maps[current_map_index + 1] then
@@ -54,7 +55,7 @@ function love.load()
             end
         end
     ))
-    table.insert(buttons, newButton(
+    table.insert(menu_buttons, newButton(
         "Previous Level",
         function()
             if maps[current_map_index - 1] then
@@ -65,7 +66,7 @@ function love.load()
             end
         end
     ))
-    table.insert(buttons, newButton(
+    table.insert(menu_buttons, newButton(
         "Exit Game",
         function()
             love.event.quit(0)
@@ -249,10 +250,10 @@ function love.draw()
         local margin = 8
         local scale = 2
 
-        local menu_height = (button_height + margin) * #buttons
+        local menu_height = (button_height + margin) * #menu_buttons
         local cursor_y = 0
 
-        for i, button in ipairs(buttons) do
+        for i, button in ipairs(menu_buttons) do
             button.last = button.now
 
             local button_x = window_width / 2 - button_width / 2
