@@ -117,7 +117,8 @@ function love.load()
 
         timer_start = love.timer.getTime()
 
-        -- If a lower high score exists for the current map, use it
+        -- If there is a current and stored record time, use the lower value
+        -- If there is no current time, use any existing, stored record time
         if high_scores[current_map_index] and result then
             if high_scores[current_map_index] < result then
                 result = high_scores[current_map_index]
@@ -140,7 +141,7 @@ function love.load()
             end
         end
 
-        -- Before a collision is resolved, determine its normal vector
+        -- Determine the above before the collision is resolved
         player.collider:setPreSolve(collision_side)
     end
 
@@ -160,7 +161,7 @@ function love.update(dt)
         player.collider:setLinearVelocity(player.vx, player.vy)
         world:update(dt)
 
-        local function calc_velocity_y(vy, float_coeff, drag_coeff, gravity, t_velocity, is_bonking)
+        local function calc_y_velocity(vy, float_coeff, drag_coeff, gravity, t_velocity, is_bonking)
             -- Scrub upward momentum when the player collides upward into a platform
             if is_bonking then vy = 0 end
 
@@ -178,13 +179,15 @@ function love.update(dt)
             return vy
         end
 
+        -- Calculate the player's y-velocity while they are airborne
         if not player.is_colliding_bot then
-            player.vy = calc_velocity_y(
+            player.vy = calc_y_velocity(
                 player.vy, player.float_coefficient, player.drag_coefficient,
                 gravity, terminal_velocity, player.is_colliding_top
             )
         end
 
+        -- Calculate the player's x-velocity, dependent on the inputted control
         if (love.keyboard.isDown(controls.left) or love.keyboard.isDown(alt_controls.left))
         and not player.is_colliding_left then
             player.vx = player.speed * -1
@@ -223,6 +226,7 @@ end
 
 
 function love.draw()
+    -- Draw the map and player
     push:start()
         game_map:drawLayer(game_map.layers["background"])
         game_map:drawLayer(game_map.layers["foreground"])
@@ -231,6 +235,7 @@ function love.draw()
         love.graphics.rectangle('fill', player.x, player.y, player.w, player.h)
     push:finish()
 
+    -- Draw the timer
     if not menu_is_open then
         current_time = love.timer.getTime() - timer_start
         love.graphics.printf(string.format("%.3f", current_time), window_width / 2 - 32, 32, 256, center, 0, 2)
@@ -240,6 +245,7 @@ function love.draw()
         end
     end
 
+    -- Draw the menu
     if menu_is_open then
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.printf("Level "..current_map_index, window_width / 2 - 32, 32, 256, center, 0, 2)
@@ -298,7 +304,19 @@ function love.draw()
 end
 
 
--- Override love.run() to pass a fixed deltaTime to love.update(), based on accumulated lag
+--[[
+
+TLDR for the below: Uncouple the game's physics from the player's framerate
+
+Explained: Override love.run() to pass a fixed deltaTime value to love.update(),
+the interval of which is based on lag. Lag, in this context, is an accumulator
+into which we add the value of individual timer steps. Once the lag exceeds
+our desired tick rate, pass that tick rate as love.update()'s deltaTime value
+and subtract the tick rate's value from our accumulated lag until it is, once
+again, below the threshold. To avoid excessive timer steps on exceptionally
+fast devices, we sleep the timer for 0.001.
+
+]]--
 
 -- 1 / Ticks Per Second
 local TICK_RATE = 1 / 144
