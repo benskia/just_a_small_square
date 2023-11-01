@@ -148,6 +148,11 @@ end
 
 function love.update(dt)
 
+    local game_dt = 0.01
+    local game_speed = 1
+
+    local rate = game_dt * dt * 100 * game_speed
+
     if not menu_is_open then
         player.x = player.collider:getX() - player.w / 2
         player.y = player.collider:getY() - player.h / 2
@@ -157,7 +162,7 @@ function love.update(dt)
         player.is_colliding_right = false
 
         player.collider:setLinearVelocity(player.vx, player.vy)
-        world:update(dt)
+        world:update(rate)
         player.vx, player.vy = player.collider:getLinearVelocity()
 
         local function calc_velocity_y(vy, float_coeff, drag_coeff, gravity, t_velocity)
