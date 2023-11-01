@@ -5,8 +5,8 @@ local window_width, window_height = 1028, 1028
 local push_attributes = {fullscreen=false, resizable=false, pixelperfect=true}
 push:setupScreen(game_width, game_height, window_width, window_height, push_attributes)
 
-local start = love.timer.getTime()
-local time = 0
+local timer_start = love.timer.getTime()
+local current_time = 0
 local result = nil
 
 local menu_buttons = {}
@@ -27,7 +27,7 @@ function love.load()
         table.insert(high_scores, i, nil)
     end
 
-    -- Menu and menu-button creation
+    -- Menu button constructor
     local function newButton(text, fn)
         return {
             text = text,
@@ -79,9 +79,8 @@ function love.load()
     function reset()
         game_map = sti(maps[current_map_index])
 
-        if world then
-            world:destroy()
-        end
+        -- Clear any existing physics objects before building the current map
+        if world then world:destroy() end
         world = wf.newWorld(0, 0, false)
 
         -- Static windfield colliders are implemented with Tiled object layers
@@ -116,7 +115,7 @@ function love.load()
             end
         end
 
-        start = love.timer.getTime()
+        timer_start = love.timer.getTime()
 
         -- If a lower high score exists for the current map, use it
         if high_scores[current_map_index] and result then
@@ -203,8 +202,8 @@ function love.update(dt)
     end
 
     if player.collider:enter("exit") then
-        if not result or time < result then
-            result = time
+        if not result or current_time < result then
+            result = current_time
         end
         reset()
     end
@@ -233,8 +232,8 @@ function love.draw()
     push:finish()
 
     if not menu_is_open then
-        time = love.timer.getTime() - start
-        love.graphics.printf(string.format("%.3f",time), window_width / 2 - 32, 32, 256, center, 0, 2)
+        current_time = love.timer.getTime() - timer_start
+        love.graphics.printf(string.format("%.3f", current_time), window_width / 2 - 32, 32, 256, center, 0, 2)
 
         if result then
             love.graphics.printf(string.format("%.3f",result), window_width / 2 - 32, 4, 256, center, 0, 2)
