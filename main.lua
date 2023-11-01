@@ -147,12 +147,6 @@ end
 
 
 function love.update(dt)
-
-    local game_dt = 0.01
-    local game_speed = 1
-
-    local rate = game_dt * dt * 100 * game_speed
-
     if not menu_is_open then
         player.x = player.collider:getX() - player.w / 2
         player.y = player.collider:getY() - player.h / 2
@@ -162,10 +156,13 @@ function love.update(dt)
         player.is_colliding_right = false
 
         player.collider:setLinearVelocity(player.vx, player.vy)
-        world:update(rate)
         player.vx, player.vy = player.collider:getLinearVelocity()
 
-        local function calc_velocity_y(vy, float_coeff, drag_coeff, gravity, t_velocity)
+        world:update(dt)
+
+        local function calc_velocity_y(vy, float_coeff, drag_coeff, gravity, t_velocity, is_bonking)
+            if is_bonking then vy = 0 end
+            
             -- Holding jump decreases the downward acceleration and maximum,
             -- downward speed of the player
             if love.keyboard.isDown(controls.jump) or love.keyboard.isDown(alt_controls.jump) then
@@ -174,14 +171,16 @@ function love.update(dt)
             end
     
             vy = vy + gravity
+
             if vy > t_velocity then vy = t_velocity end
+
             return vy
         end
 
         if not player.is_colliding_bot then
             player.vy = calc_velocity_y(
                 player.vy, player.float_coefficient, player.drag_coefficient,
-                gravity, terminal_velocity
+                gravity, terminal_velocity, player.is_colliding_top
             )
         end
 
@@ -233,6 +232,7 @@ function love.draw()
     if not menu_is_open then
         time = love.timer.getTime() - start
         love.graphics.printf(string.format("%.3f",time), window_width / 2 - 32, 32, 256, center, 0, 2)
+
         if result then
             love.graphics.printf(string.format("%.3f",result), window_width / 2 - 32, 4, 256, center, 0, 2)
         end
@@ -265,6 +265,7 @@ function love.draw()
             end
 
             button.now = love.mouse.isDown(1)
+
             if button.now and not button.last and mouseover then
                 button.fn()
             end
@@ -291,5 +292,58 @@ function love.draw()
 
             cursor_y = cursor_y + button_height + margin
         end
+    end
+end
+
+
+-- Override love.run() to pass a fixed deltaTime to love.update(), based on accumulated lag
+
+-- 1 / Ticks Per Second
+local TICK_RATE = 1 / 144
+
+-- How many Frames are allowed to be skipped at once due to lag (no "spiral of death")
+local MAX_FRAME_SKIP = 25
+
+function love.run()
+    if love.load then love.load(love.arg.parseGameArguments(arg), arg) end
+ 
+    -- We don't want the first frame's dt to include time taken by love.load.
+    if love.timer then love.timer.step() end
+
+    local lag = 0.0
+
+    -- Main loop time.
+    return function()
+        -- Process events.
+        if love.event then
+            love.event.pump()
+            for name, a,b,c,d,e,f in love.event.poll() do
+                if name == "quit" then
+                    if not love.quit or not love.quit() then
+                        return a or 0
+                    end
+                end
+                love.handlers[name](a,b,c,d,e,f)
+            end
+        end
+
+        -- Cap number of Frames that can be skipped so lag doesn't accumulate
+        if love.timer then lag = math.min(lag + love.timer.step(), TICK_RATE * MAX_FRAME_SKIP) end
+
+        while lag >= TICK_RATE do
+            if love.update then love.update(TICK_RATE) end
+            lag = lag - TICK_RATE
+        end
+
+        if love.graphics and love.graphics.isActive() then
+            love.graphics.origin()
+            love.graphics.clear(love.graphics.getBackgroundColor())
+ 
+            if love.draw then love.draw() end
+            love.graphics.present()
+        end
+
+        -- Even though we limit tick rate and not frame rate, we might want to cap framerate at 1000 frame rate as mentioned https://love2d.org/forums/viewtopic.php?f=4&t=76998&p=198629&hilit=love.timer.sleep#p160881
+        if love.timer then love.timer.sleep(0.001) end
     end
 end
